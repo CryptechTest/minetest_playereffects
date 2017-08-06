@@ -115,7 +115,7 @@ playereffects.register_effect_type("slowregen", "Slow Regeneration", "heart.png"
 	function(player)
 		player:set_hp(player:get_hp()+1)
 	end,
-	nil, nil, nil, 15
+	nil, nil, nil, 3
 )
 
 
