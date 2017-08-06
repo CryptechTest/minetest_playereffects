@@ -119,7 +119,7 @@ playereffects.register_effect_type("slowregen", "Slow Regeneration", "heart.png"
 )
 
 
--- Dummy effect for the stree test
+-- Dummy effect for the stress test
 playereffects.register_effect_type("stress", "Stress Test Effect", nil, {},
 	function(player)
 	end,
