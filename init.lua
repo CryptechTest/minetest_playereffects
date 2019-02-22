@@ -206,7 +206,7 @@ end
 
 function playereffects.repeater(effect_id, repetitions, entity, apply)
 	local effect = playereffects.effects[effect_id]
-	if(effect ~= nil) then
+	if(effect ~= nil and entity ~= nil and entity:get_luaentity() ~= nil) then
 		local repetitions = effect.time_left
 		apply(entity)
 		repetitions = repetitions - 1
