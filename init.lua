@@ -98,26 +98,26 @@ function playereffects.register_effect_type(effect_type_id, description, icon, g
 	minetest.log("action", "[playereffects] Effect type "..effect_type_id.." registered!")
 end
 
-function playereffects.apply_effect_type(effect_type_id, duration, player, repeat_interval_time_left)
+function playereffects.apply_effect_type(effect_type_id, duration, entity, repeat_interval_time_left)
 	local start_time = os.time()
 	local is_player = false
-	if(type(player)=="userdata") then
-		if(player.is_player ~= nil) then
-			if(player:is_player() == true) then
+	if(type(entity)=="userdata") then
+		if(entity.is_player ~= nil) then
+			if(entity:is_player() == true) then
 				is_player = true
 			end
 		end
 	end
 
-	local playername = player:get_player_name()
+	local playername = entity:get_player_name()
 	local groups = playereffects.effect_types[effect_type_id].groups
 	for k,v in pairs(groups) do
-		playereffects.cancel_effect_group(v, playername)
+		playereffects.cancel_effect_group(v, entity)
 	end
 
 	local metadata
 	if(playereffects.effect_types[effect_type_id].repeat_interval == nil) then
-		local status = playereffects.effect_types[effect_type_id].apply(player)
+		local status = playereffects.effect_types[effect_type_id].apply(entity)
 		if(status == false) then
 			if is_player then
 				minetest.log("action", "[playereffects] Attempt to apply effect type "..effect_type_id.." to player "..playername.." failed!")
@@ -130,6 +130,14 @@ function playereffects.apply_effect_type(effect_type_id, duration, player, repea
 
 
 	local effect_id = playereffects.next_effect_id()
+
+	-- repeat stuff
+	local repeat_interval = playereffects.effect_types[effect_type_id].repeat_interval
+	if(repeat_interval ~= nil) then
+		if(repeat_interval_time_left == nil) then
+			repeat_interval_time_left = repeat_interval
+		end
+	end
 
 	-- Handle HUD
 	if is_player then
@@ -158,21 +166,11 @@ function playereffects.apply_effect_type(effect_type_id, duration, player, repea
 		else
 			free_hudpos = biggest_hudpos + 1
 		end
-	end
 
-	-- repeat stuff
-	local repeat_interval = playereffects.effect_types[effect_type_id].repeat_interval
-	if(repeat_interval ~= nil) then
-		if(repeat_interval_time_left == nil) then
-			repeat_interval_time_left = repeat_interval
-		end
-	end
-
-	--[[ show no more than 20 effects on the screen, so that hud_update does not need to be called so often ]]
-	if is_player then
+		--[[ show no more than 20 effects on the screen, so that hud_update does not need to be called so often ]]
 		local text_id, icon_id
 		if(free_hudpos <= 20) then
-			text_id, icon_id = playereffects.hud_effect(effect_type_id, player, free_hudpos, duration, repeat_interval_time_left)
+			text_id, icon_id = playereffects.hud_effect(effect_type_id, entity, free_hudpos, duration, repeat_interval_time_left)
 			local hudinfo = {
 					text_id = text_id,
 					icon_id = icon_id,
@@ -198,7 +196,7 @@ function playereffects.apply_effect_type(effect_type_id, duration, player, repea
 	playereffects.effects[effect_id] = effect
 
 	if(repeat_interval ~= nil) then
-		minetest.after(repeat_interval_time_left, playereffects.repeater, effect_id, duration, player, playereffects.effect_types[effect_type_id].apply)
+		minetest.after(repeat_interval_time_left, playereffects.repeater, effect_id, duration, entity, playereffects.effect_types[effect_type_id].apply)
 	else
 		minetest.after(duration, function(effect_id) playereffects.cancel_effect(effect_id) end, effect_id)
 	end
@@ -206,11 +204,11 @@ function playereffects.apply_effect_type(effect_type_id, duration, player, repea
 	return effect_id
 end
 
-function playereffects.repeater(effect_id, repetitions, player, apply)
+function playereffects.repeater(effect_id, repetitions, entity, apply)
 	local effect = playereffects.effects[effect_id]
 	if(effect ~= nil) then
 		local repetitions = effect.time_left
-		apply(player)
+		apply(entity)
 		repetitions = repetitions - 1
 		effect.time_left = repetitions
 		if(repetitions <= 0) then
@@ -224,19 +222,15 @@ function playereffects.repeater(effect_id, repetitions, player, apply)
 				playereffects.repeater,
 				effect_id,
 				repetitions,
-				player,
+				entity,
 				apply
 			)
 		end
 	end
 end
 
-function playereffects.cancel_effect_type(effect_type_id, cancel_all, playername)
-	-- TODO
-	if(playername == "") then
-		return
-	end
-	local effects = playereffects.get_player_effects(playername)
+function playereffects.cancel_effect_type(effect_type_id, cancel_all, entity_or_playername)
+	local effects = playereffects.get_player_effects(entity_or_playername)
 	if(cancel_all==nil) then cancel_all = false end
 	for e=1, #effects do
 		if(effects[e].effect_type_id == effect_type_id) then
@@ -248,12 +242,8 @@ function playereffects.cancel_effect_type(effect_type_id, cancel_all, playername
 	end
 end
 
-function playereffects.cancel_effect_group(groupname, playername)
-	-- TODO
-	if(playername == "") then
-		return
-	end
-	local effects = playereffects.get_player_effects(playername)
+function playereffects.cancel_effect_group(groupname, entity_or_playername)
+	local effects = playereffects.get_player_effects(entity_or_playername)
 	for e=1,#effects do
 		local effect = effects[e]
 		local thesegroups = playereffects.effect_types[effect.effect_type_id].groups
@@ -300,9 +290,14 @@ function playereffects.cancel_effect(effect_id)
 	end
 end
 
-function playereffects.get_player_effects(playername)
-	-- TODO
-	if(playername == "") then
+function playereffects.get_player_effects(entity_or_playername)
+	-- TODO: support entity
+	local playername = ""
+	if type(entity_or_playername) == "string" then
+		playername = entity_or_playername
+	elseif type(entity_or_playername) == "userdata" and entity_or_playername:is_player() then
+		playername = entity_or_playername:get_player_name()
+	else
 		return {}
 	end
 	if(minetest.get_player_by_name(playername) ~= nil) then
@@ -318,12 +313,8 @@ function playereffects.get_player_effects(playername)
 	end
 end
 
-function playereffects.has_effect_type(playername, effect_type_id)
-	-- TODO
-	if(playername == "") then
-		return false
-	end
-	local pe = playereffects.get_player_effects(playername)
+function playereffects.has_effect_type(entity_or_playername, effect_type_id)
+	local pe = playereffects.get_player_effects(entity_or_playername)
 	for i=1,#pe do
 		if pe[i].effect_type_id == effect_type_id then
 			return true
