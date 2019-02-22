@@ -1,6 +1,6 @@
 # Player Effects
 ## Summary
-This is an framework for assigning temporary status effects to players. This mod is aimed to modders and maybe interested people. This framework is a work in progress and not finished.
+This is an framework for assigning temporary status effects to players. This mod is aimed to modders and maybe interested people.
 
 ## Profile
 * Name: Player Effects
