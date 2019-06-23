@@ -355,7 +355,7 @@ function playereffects.save_to_file()
 	if file then
 		file:write(savestring)
 		io.close(file)
-		minetest.log("action", "[playereffects] Wrote playereffects data into "..filepath..".")
+		minetest.log("info", "[playereffects] Wrote playereffects data into "..filepath..".")
 	else
 		minetest.log("error", "[playereffects] Failed to write playereffects data into "..filepath..".")
 	end
@@ -393,7 +393,7 @@ minetest.register_on_leaveplayer(function(player)
 end)
 
 minetest.register_on_shutdown(function()
-	minetest.log("action", "[playereffects] Server shuts down. Rescuing data into playereffects.mt")
+	minetest.log("info", "[playereffects] Server shuts down. Rescuing data into playereffects.mt")
 	playereffects.save_to_file()
 end)
 
@@ -427,7 +427,7 @@ minetest.register_globalstep(function(dtime)
 	-- Autosave into file
 	if(playereffects.use_autosave == true and playereffects.autosave_timer >= playereffects.autosave_time) then
 		playereffects.autosave_timer = 0
-		minetest.log("action", "[playereffects] Autosaving mod data to playereffects.mt ...")
+		minetest.log("info", "[playereffects] Autosaving mod data to playereffects.mt ...")
 		playereffects.save_to_file()
 	end
 end)
